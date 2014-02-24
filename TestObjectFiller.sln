@@ -1,0 +1,26 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio 2012
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "TestObjectFiller", "TestObjectFiller\TestObjectFiller.csproj", "{8B459296-9D26-428F-BE06-E119F17FB473}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "TestObjectFillerUnitTests", "TestObjectFillerUnitTests\TestObjectFillerUnitTests.csproj", "{D06B5210-A56A-4AFB-B8D8-5E6610414BE2}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{8B459296-9D26-428F-BE06-E119F17FB473}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{8B459296-9D26-428F-BE06-E119F17FB473}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{8B459296-9D26-428F-BE06-E119F17FB473}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{8B459296-9D26-428F-BE06-E119F17FB473}.Release|Any CPU.Build.0 = Release|Any CPU
+		{D06B5210-A56A-4AFB-B8D8-5E6610414BE2}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{D06B5210-A56A-4AFB-B8D8-5E6610414BE2}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{D06B5210-A56A-4AFB-B8D8-5E6610414BE2}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{D06B5210-A56A-4AFB-B8D8-5E6610414BE2}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+EndGlobal
