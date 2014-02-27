@@ -7,14 +7,22 @@ namespace TestObjectFillerUnitTests.TestObjects
     public class ComplexTestDtoClass
     {
         public TestDtoClass TestDtoClass { get; set; }
+
+        public List<String> StringList { get; set; }
         
-        public List<TestDtoClass> ListTestDtoClass { get; set; }
+        public Dictionary<string, TestDtoClass> DictionaryTestDtoClasses { get; set; }
         
+        public IList<TestDtoClass> ListTestDtoClass { get; set; }
+
+        public IEnumerable<TestDtoClass> EnumerableTestDtoClasses { get; set; }
+
+        // TODO cannot be done just yet
+        //public List<List<TestDtoClass>> DoubleListTestDtoClass { get; set; }
+
         public ArrayList ArrayListTestDtoClass { get; set; } 
 
         public Array[] Array { get; set; }
 
-        public IEnumerable<TestDtoClass>  EnumerableTestDtoClasses { get; set; }
 
         private MyInternalClass InternalClass { get; set; }
 
