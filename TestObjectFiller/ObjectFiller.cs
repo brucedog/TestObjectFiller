@@ -1,8 +1,8 @@
 ﻿using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
-using System.Text;
 
 namespace TestObjectFiller
 {
@@ -13,15 +13,22 @@ namespace TestObjectFiller
     {
         // todo
         private static bool _isRuleOverrided;
-        private static Random _random = new Random(56465321);
+        private static Random _random = new Random((int)DateTime.Now.Ticks);
 
+        /// <summary>
+        /// Fills the the object's properties with random data.
+        /// </summary>
+        /// <typeparam name="T"></typeparam>
+        /// <param name="objectTobeFilled">The object tobe filled.</param>
+        /// <param name="objectsType">Type of the objects.</param>
+        /// <returns>object with filled data</returns>
         public static T FillThisObject<T>(T objectTobeFilled, Type objectsType)
         {
             FillProperties(objectTobeFilled, objectsType);
             
             return objectTobeFilled;
         }
-
+        
         private static void FillProperties<T>(T objectTobeFilled, Type objectsType)
         {
             PropertyInfo[] objectsProperties = objectsType.GetProperties();
@@ -31,56 +38,79 @@ namespace TestObjectFiller
                 Type propertyType = propertyInfo.PropertyType;
                 if (propertyType.Namespace == null) continue;
 
-                if (propertyType.Namespace.Contains("System"))
+                // Make collection not null and try and add item to list.
+                if (propertyType.Namespace.Contains("Collection"))
                 {
-                    switch (propertyType.Name)
+                    dynamic instance;
+                    if (propertyType.GetGenericArguments().Length > 0 && !propertyType.Name.Contains("Dic"))
                     {
-                        case "String":
-                            SetStringPropertyValue(objectTobeFilled, propertyInfo);
-                            break;
-                        case "DateTime":
-                            SetDateTimePropertyValue(objectTobeFilled, propertyInfo);
-                            break;
-                        case "Int32":
-                            SetIntegerPropertyValue(objectTobeFilled, propertyInfo);
-                            break;
-                        case "Double":
-                            SetDoublePropertyValue(objectTobeFilled, propertyInfo);
-                            break;
-                        case "Float":
-                            SetFloatPropertyValue(objectTobeFilled, propertyInfo);
-                            break;
-                        case "Decimal":
-                            SetDecimalPropertyValue(objectTobeFilled, propertyInfo);
-                            break;
-                        case "Object":
-                            SetObjectPropertyValue(objectTobeFilled, propertyInfo);
-                            break;
-                        case "Int64":
-                            SetLongPropertyValue(objectTobeFilled, propertyInfo);
-                            break;
-                        case "SByte":
-                            SetSbytePropertyValue(objectTobeFilled, propertyInfo);
-                            break;
-                        case "Char":
-                            SetCharPropertyValue(objectTobeFilled, propertyInfo);
-                            break;
-                        case "Single":
-                            SetSinglePropertyValue(objectTobeFilled, propertyInfo);
-                            break;
-                        case "Boolean":
-                            SetBooleanPropertyValue(objectTobeFilled, propertyInfo);
-                            break;
-                        case "Array[]":
-                            SetArrayPropertyValue(objectTobeFilled, propertyInfo);
-                            break;
-                        case "List":
-                            SetListPropertyValue(objectTobeFilled, propertyInfo);
-                            break;
+                        // This is done to create a concrete implementation for an IList or IEnumerable
+                        Type listType = typeof(List<>).MakeGenericType(propertyType.GetGenericArguments());
+                        instance = Activator.CreateInstance(listType);
                     }
+                    else
+                    {
+                        instance = Activator.CreateInstance(propertyType);
+                    }
+                    
+                    if (propertyType.Name.Contains("Dic"))
+                    {
+                        dynamic key = null;
+                        dynamic value = null;
+                        for (int i = 0; i < propertyType.GetGenericArguments().Length; i++)
+                        {
+                            dynamic temp;
+                            var itemType = propertyType.GetGenericArguments()[i];
+                            if (!itemType.IsSealed && itemType.GetProperties().Length > 0)
+                            {
+                                temp = Activator.CreateInstance(itemType);
+                                Type itsType = temp.GetType();
+                                FillProperties(temp, itsType);
+                            }
+                            else
+                            {
+                                temp = GetValue(itemType);
+                            }
+
+                            if (i == 0)
+                            {
+                                key = temp;
+                            }
+                            else
+                            {
+                                value = temp;
+                            }
+                        }
+
+                        instance.Add(key, value);
+                    }
+                    else if (propertyType.GetGenericArguments().Length > 0)
+                    {
+                        var itemType = propertyType.GetGenericArguments()[0];
+                        if (!itemType.IsSealed && itemType.GetProperties().Length > 0)
+                        {
+                            dynamic customObjectProperty = Activator.CreateInstance(itemType);
+                            Type itsType = customObjectProperty.GetType();
+                            FillProperties(customObjectProperty, itsType);
+                            instance.Add(customObjectProperty);
+                        }
+                        else
+                        {
+                            dynamic objectToSet = GetValue(itemType);
+                            instance.Add(objectToSet);
+                        }
+                    }
+
+                    propertyInfo.SetValue(objectTobeFilled, instance, null);
+                }
+                else if (propertyType.Namespace.Contains("System"))
+                {
+                    var objectToSet = GetValue(propertyType);
+
+                    propertyInfo.SetValue(objectTobeFilled, objectToSet, null);
                 }
                 else
-                {
+                {                    
                     var customObjectProperty = Activator.CreateInstance(propertyType);
                     Type itsType = customObjectProperty.GetType();
                     FillProperties(customObjectProperty, itsType);
@@ -92,176 +122,48 @@ namespace TestObjectFiller
 
         #region private methods
 
-        private static void SetListPropertyValue<T>(T objectTobeFilled, PropertyInfo propertyInfo)
+        /// <summary>
+        /// Gets a value for a basic data type.
+        /// TODO need to implement rule to override default values
+        /// </summary>
+        /// <param name="propertyType">Type of the property.</param>
+        /// <returns>random value for that properties type</returns>
+        private static object GetValue(Type propertyType)
         {
-            if (_isRuleOverrided)
+            switch (propertyType.Name)
             {
-                // todo
-            }
-            else
-            {                
-                propertyInfo.SetValue(objectTobeFilled, new List<T>(), null);
+                case "String":
+                    return "random_String_" + _random.Next();
+                case "DateTime":
+                    return DateTime.Now;
+                case "Int32":
+                    return _random.Next();
+                case "Double":
+                    return _random.NextDouble();
+                case "Float":
+                    double mantissa = (_random.NextDouble()*2.0) - 1.0;
+                    double exponent = Math.Pow(2.0, _random.Next(-126, 128));
+                    return (float) (mantissa*exponent);
+                case "Decimal":
+                    return Decimal.MaxValue;
+                case "Object":
+                    return new object();
+                case "Int64":
+                    return long.MaxValue;
+                case "SByte":
+                    return SByte.MaxValue;
+                case "Char":
+                    return 'x';
+                case "Single":
+                    return Single.MaxValue;
+                case "Boolean":
+                    return true;
+                case "Array[]":
+                    return new Array[1];
+                default:
+                    return null;
             }
         }
-
-        private static void SetArrayPropertyValue<T>(T objectTobeFilled, PropertyInfo propertyInfo)
-        {
-            if (_isRuleOverrided)
-            {
-                // todo
-            }
-            else
-            {
-                propertyInfo.SetValue(objectTobeFilled, new Array[1], null);
-            }
-        }
-
-        private static void SetDecimalPropertyValue<T>(T objectTobeFilled, PropertyInfo propertyInfo)
-        {
-            if (_isRuleOverrided)
-            {
-                // todo
-            }
-            else
-            {
-                propertyInfo.SetValue(objectTobeFilled, Decimal.MaxValue, null);
-            }
-        }
-
-        private static void SetSinglePropertyValue<T>(T objectTobeFilled, PropertyInfo propertyInfo)
-        {
-            if (_isRuleOverrided)
-            {
-                // todo
-            }
-            else
-            {
-                propertyInfo.SetValue(objectTobeFilled, Single.MaxValue, null);
-            }
-        }
-
-        private static void SetObjectPropertyValue<T>(T objectTobeFilled, PropertyInfo propertyInfo)
-        {
-            if (_isRuleOverrided)
-            {
-                // todo
-            }
-            else
-            {
-                propertyInfo.SetValue(objectTobeFilled, new object(), null);
-            }
-        }
-
-        private static void SetLongPropertyValue<T>(T objectTobeFilled, PropertyInfo propertyInfo)
-        {
-            if (_isRuleOverrided)
-            {
-                // todo
-            }
-            else
-            {
-                propertyInfo.SetValue(objectTobeFilled, long.MaxValue, null);
-            }
-        }
-
-        private static void SetCharPropertyValue<T>(T objectTobeFilled, PropertyInfo propertyInfo)
-        {
-            if (_isRuleOverrided)
-            {
-                // todo
-            }
-            else
-            {
-                propertyInfo.SetValue(objectTobeFilled, 'x', null);
-            }
-        }
-
-        private static void SetSbytePropertyValue<T>(T objectTobeFilled, PropertyInfo propertyInfo)
-        {
-            if (_isRuleOverrided)
-            {
-                // todo
-            }
-            else
-            {
-                propertyInfo.SetValue(objectTobeFilled, SByte.MaxValue, null);
-            }
-        }
-
-        private static void SetBooleanPropertyValue<T>(T objectTobeFilled, PropertyInfo propertyInfo)
-        {
-            if (_isRuleOverrided)
-            {
-                // todo
-            }
-            else
-            {
-                propertyInfo.SetValue(objectTobeFilled, true, null);
-            }
-        }
-
-        private static void SetFloatPropertyValue<T>(T objectTobeFilled, PropertyInfo propertyInfo)
-        {
-            if (_isRuleOverrided)
-            {
-                // todo
-            }
-            else
-            {
-                double mantissa = (_random.NextDouble() * 2.0) - 1.0;
-                double exponent = Math.Pow(2.0, _random.Next(-126, 128));
-                propertyInfo.SetValue(objectTobeFilled, (float)(mantissa * exponent), null);
-            }
-        }
-
-        private static void SetDoublePropertyValue<T>(T objectTobeFilled, PropertyInfo propertyInfo)
-        {
-            if (_isRuleOverrided)
-            {
-                // todo
-            }
-            else
-            {
-                propertyInfo.SetValue(objectTobeFilled, _random.NextDouble(), null);
-            }
-        }
-
-        private static void SetIntegerPropertyValue<T>(T objectTobeFilled, PropertyInfo propertyInfo)
-        {
-            if (_isRuleOverrided)
-            {
-                // todo
-            }
-            else
-            {
-                propertyInfo.SetValue(objectTobeFilled, _random.Next(), null);
-            }
-        }
-
-        private static void SetDateTimePropertyValue<T>(T objectTobeFilled, PropertyInfo propertyInfo)
-        {
-            if (_isRuleOverrided)
-            {
-                // todo
-            }
-            else
-            {
-                propertyInfo.SetValue(objectTobeFilled, DateTime.Now, null);
-            }
-        }
-
-        private static void SetStringPropertyValue<T>(T objectTobeFilled, PropertyInfo propertyInfo)
-        {
-            if (_isRuleOverrided)
-            {
-                // todo
-            }
-            else
-            {
-                propertyInfo.SetValue(objectTobeFilled, "random_String_" + _random.NextDouble(), null);
-            }
-        }
-
         #endregion
     }
 }
