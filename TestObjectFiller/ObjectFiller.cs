@@ -39,6 +39,7 @@ namespace TestObjectFiller
                 if (propertyType.Namespace == null) continue;
 
                 // Make collection not null and try and add item to list.
+                // TODO going to change logic to just handle the type of collections directly
                 if (propertyType.Namespace.Contains("Collection"))
                 {
                     dynamic instance;
@@ -52,7 +53,7 @@ namespace TestObjectFiller
                     {
                         instance = Activator.CreateInstance(propertyType);
                     }
-                    
+                    // TODO should be separate method of logic to handle dictionary
                     if (propertyType.Name.Contains("Dic"))
                     {
                         dynamic key = null;
