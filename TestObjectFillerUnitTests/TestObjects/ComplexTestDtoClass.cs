@@ -21,11 +21,9 @@ namespace TestObjectFillerUnitTests.TestObjects
         public Array[] Array { get; set; }
         
         // TODO cannot be done just yet
-        //public List<List<TestDtoClass>> DoubleListTestDtoClass { get; set; }
-
-        //public HashSet<TestDtoClass> HashSetTestDtoClasses { get; set; }
-
-        //public Hashtable HashtableTestDtoClasses { get; set; }
+        // public List<List<TestDtoClass>> DoubleListTestDtoClass { get; set; }
+        // public HashSet<TestDtoClass> HashSetTestDtoClasses { get; set; }
+        // public Hashtable HashtableTestDtoClasses { get; set; }
 
         private MyInternalClass InternalClass { get; set; }
 
