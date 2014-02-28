@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Linq;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using TestObjectFiller;
 using TestObjectFillerUnitTests.TestObjects;
@@ -20,6 +21,11 @@ namespace TestObjectFillerUnitTests
             objectToFill = ObjectFiller.FillThisObject(objectToFill, objectToFill.GetType());
 
             Assert.IsTrue(objectToFill.Array.Length > 0);
+            Assert.IsTrue(objectToFill.EnumerableTestDtoClasses.Any());
+            Assert.IsTrue(objectToFill.ListTestDtoClass.Any());
+            Assert.IsTrue(objectToFill.StringList.Any());
+            Assert.IsTrue(objectToFill.DictionaryTestDtoClasses.Any());
+            Assert.IsTrue(objectToFill.ArrayListTestDtoClass.Count > 0);
 
             Assert.IsTrue(objectToFill.TestDtoClass.GetType() == typeof(TestDtoClass));
 
