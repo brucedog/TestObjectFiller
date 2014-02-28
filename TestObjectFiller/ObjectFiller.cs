@@ -194,6 +194,8 @@ namespace TestObjectFiller
                     return true;
                 case "Array[]":
                     return new Array[1];
+                case "Guid":
+                    return Guid.NewGuid();
                 default:
                     return null;
             }
