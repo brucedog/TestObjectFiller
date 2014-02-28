@@ -24,12 +24,14 @@ namespace TestObjectFiller
         /// <returns>object with filled data</returns>
         public static T FillThisObject<T>(T objectTobeFilled, Type objectsType)
         {
-            FillProperties(objectTobeFilled, objectsType);
+            FillObjectProperties(objectTobeFilled, objectsType);
             
             return objectTobeFilled;
         }
+
+        #region private methods
         
-        private static void FillProperties<T>(T objectTobeFilled, Type objectsType)
+        private static void FillObjectProperties<T>(T objectTobeFilled, Type objectsType)
         {
             PropertyInfo[] objectsProperties = objectsType.GetProperties();
 
@@ -38,90 +40,121 @@ namespace TestObjectFiller
                 Type propertyType = propertyInfo.PropertyType;
                 if (propertyType.Namespace == null) continue;
 
+                dynamic value = null;
                 // Make collection not null and try and add item to list.
-                // TODO going to change logic to just handle the type of collections directly
                 if (propertyType.Namespace.Contains("Collection"))
                 {
-                    dynamic instance;
-                    if (propertyType.GetGenericArguments().Length > 0 && !propertyType.Name.Contains("Dic"))
+                    // TODO this cannot be handle 
+                    if (propertyType.Name.Contains("Hash"))
+                        continue;
+                    
+                    if (propertyType.GetGenericArguments().Length == 1)
                     {
                         // This is done to create a concrete implementation for an IList or IEnumerable
                         Type listType = typeof(List<>).MakeGenericType(propertyType.GetGenericArguments());
-                        instance = Activator.CreateInstance(listType);
+                        value = Activator.CreateInstance(listType);
+
+                        var itemType = propertyType.GetGenericArguments()[0];
+                        dynamic temp = FillObject<T>(itemType);
+                        value.Add(temp);
                     }
                     else
                     {
-                        instance = Activator.CreateInstance(propertyType);
-                    }
-                    // TODO should be separate method of logic to handle dictionary
-                    if (propertyType.Name.Contains("Dic"))
-                    {
-                        dynamic key = null;
-                        dynamic value = null;
-                        for (int i = 0; i < propertyType.GetGenericArguments().Length; i++)
-                        {
-                            dynamic temp;
-                            var itemType = propertyType.GetGenericArguments()[i];
-                            if (!itemType.IsSealed && itemType.GetProperties().Length > 0)
-                            {
-                                temp = Activator.CreateInstance(itemType);
-                                Type itsType = temp.GetType();
-                                FillProperties(temp, itsType);
-                            }
-                            else
-                            {
-                                temp = GetValue(itemType);
-                            }
-
-                            if (i == 0)
-                            {
-                                key = temp;
-                            }
-                            else
-                            {
-                                value = temp;
-                            }
-                        }
-
-                        instance.Add(key, value);
-                    }
-                    else if (propertyType.GetGenericArguments().Length > 0)
-                    {
-                        var itemType = propertyType.GetGenericArguments()[0];
-                        if (!itemType.IsSealed && itemType.GetProperties().Length > 0)
-                        {
-                            dynamic customObjectProperty = Activator.CreateInstance(itemType);
-                            Type itsType = customObjectProperty.GetType();
-                            FillProperties(customObjectProperty, itsType);
-                            instance.Add(customObjectProperty);
-                        }
-                        else
-                        {
-                            dynamic objectToSet = GetValue(itemType);
-                            instance.Add(objectToSet);
-                        }
+                        value = Activator.CreateInstance(propertyType);
                     }
 
-                    propertyInfo.SetValue(objectTobeFilled, instance, null);
+                    if (propertyType.Name.Equals("ArrayList"))
+                        FillArrayList<T>(propertyType, value);
+                    else if (propertyType.Name.Contains("Dic"))
+                        FillDictionary<T>(propertyType, value);
+
                 }
                 else if (propertyType.Namespace.Contains("System"))
                 {
-                    var objectToSet = GetValue(propertyType);
-
-                    propertyInfo.SetValue(objectTobeFilled, objectToSet, null);
+                    value = GetBasicDataTypeValue(propertyType);
                 }
-                else
-                {                    
-                    var customObjectProperty = Activator.CreateInstance(propertyType);
-                    Type itsType = customObjectProperty.GetType();
-                    FillProperties(customObjectProperty, itsType);
+                else if (IsComplexObject<T>(propertyType))
+                {
+                    value = Activator.CreateInstance(propertyType);
+                    Type itsType = value.GetType();
 
-                    propertyInfo.SetValue(objectTobeFilled, customObjectProperty, null);
+                    FillObjectProperties(value, itsType);
                 }
+
+                propertyInfo.SetValue(objectTobeFilled, value, null);
             }
         }
 
-        #region private methods
+        private static void FillArrayList<T>(Type propertyType, dynamic value)
+        {
+            if (!propertyType.Name.Contains("ArrayList"))
+                return;
+
+            ArrayList arrayList = value;
+
+            arrayList.Add(new object());
+        }
+
+        /// <summary>
+        /// Fills the dictionary.
+        /// </summary>
+        /// <typeparam name="T"></typeparam>
+        /// <param name="propertyType">Type of the property.</param>
+        /// <param name="instance">The instance.</param>
+        private static void FillDictionary<T>(Type propertyType, dynamic instance)
+        {
+            if (!propertyType.Name.Contains("Dic")) 
+                return;
+
+            dynamic key = null;
+            dynamic value = null;
+            for (int i = 0; i < propertyType.GetGenericArguments().Length; i++)
+            {
+                var itemType = propertyType.GetGenericArguments()[i];
+                dynamic temp = FillObject<T>(itemType);
+
+                if (i == 0)
+                    key = temp;
+                else
+                    value = temp;
+            }
+
+            instance.Add(key, value);
+        }
+
+        /// <summary>
+        /// Fills the object.
+        /// </summary>
+        /// <typeparam name="T"></typeparam>
+        /// <param name="itemType">Type of the item.</param>
+        /// <returns></returns>
+        private static dynamic FillObject<T>(Type itemType)
+        {
+            dynamic temp;
+            if (IsComplexObject<T>(itemType))
+            {
+                temp = Activator.CreateInstance(itemType);
+                Type itsType = temp.GetType();
+                FillObjectProperties(temp, itsType);
+            }
+            else
+            {
+                temp = GetBasicDataTypeValue(itemType);
+            }
+            return temp;
+        }
+
+        /// <summary>
+        /// Determines whether [is complex object] [the specified item type].
+        /// </summary>
+        /// <typeparam name="T"></typeparam>
+        /// <param name="itemType">Type of the item.</param>
+        /// <returns></returns>
+        private static bool IsComplexObject<T>(Type itemType)
+        {
+            return !itemType.IsSealed && itemType.GetProperties().Length > 0;
+        }
+
 
         /// <summary>
         /// Gets a value for a basic data type.
@@ -129,7 +162,7 @@ namespace TestObjectFiller
         /// </summary>
         /// <param name="propertyType">Type of the property.</param>
         /// <returns>random value for that properties type</returns>
-        private static object GetValue(Type propertyType)
+        private static object GetBasicDataTypeValue(Type propertyType)
         {
             switch (propertyType.Name)
             {
