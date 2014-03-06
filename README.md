@@ -1,13 +1,14 @@
-## Test Object Filler ## 
+## Test Object Filler 
+Filling objects for testing so you don't have to.
 
-## Project Description ##
+## Project Description 
 Library designed to auto fill DTOs (data transfer objects) properties. THIS IS AN ALPHA VERSION.
 
-## Overview ##
+## Overview 
 Test Object Filler was intended to be used with a mocking framework such a [Rhino Mocks](http://hibernatingrhinos.com/oss/rhino-mocks) so that a mocked method would return a object filled with "data". 
 
 
-## Example ##
+## Example 
 
 Basic test that checks the properties for data.
  
@@ -38,5 +39,5 @@ public void ObjectFiller_FillBasicTypes()
 }
 ```
 
-## Plan Features ##
+## Plan Features 
 * Ability to add rules on how properties are populated.
